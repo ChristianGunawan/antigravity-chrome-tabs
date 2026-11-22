@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "Antigravity Tab Groups",
+  "version": "1.0.0",
+  "description": "Privacy-first colored background tab groups for AI agents via chrome-devtools-mcp.",
+  "permissions": ["tabs", "tabGroups"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Antigravity Tab Groups"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}
