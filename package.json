@@ -7,6 +7,9 @@
   "bin": {
     "antigravity-chrome-tabs": "./bin/cli.mjs"
   },
+  "scripts": {
+    "test": "node extension/verify.mjs && node bin/verify-cli.mjs"
+  },
   "engines": {
     "node": ">=20.19.0"
   },

@@ -13,6 +13,15 @@ Opens, automates, and cleans up background Chrome tabs inside labeled colored **
 - Enforces an **`http:` / `https:` URL scheme allowlist** (blocks `chrome://`, `file://`, `javascript:`, `data:`).
 - Enforces an **`AGY*` group prefix guard** so agents cannot touch personal tab groups.
 
+## Agent Self-Check CLI (`CLI-Anything` JSON Interface)
+
+Check installation and Chrome remote debugging readiness in 1 call:
+```bash
+npx github:ChristianGunawan/antigravity-chrome-tabs status --json
+npx github:ChristianGunawan/antigravity-chrome-tabs doctor --json
+npx github:ChristianGunawan/antigravity-chrome-tabs verify --json
+```
+
 ## Lifecycle Workflow (via `chrome-devtools` MCP)
 
 1. **Discover or wake the extension service worker**:

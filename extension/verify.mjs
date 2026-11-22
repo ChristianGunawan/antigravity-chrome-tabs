@@ -103,4 +103,11 @@ assert.equal(groups.length, 1);
 assert.equal(groups[0].title, "PERSONAL");
 assert.equal(tabs.length, 1);
 
-console.log("PASS: extension security & lifecycle verified (5/5 checks)");
+// 6. Static security scan across runtime extension files
+const dangerRe = /\b(?:eval|new Function|innerHTML|fetch|XMLHttpRequest|WebSocket|chrome\.cookies|chrome\.history)\b/;
+for (const fname of ["background.js", "popup.js"]) {
+  const src = readFileSync(new URL(fname, dir), "utf8");
+  assert.equal(dangerRe.test(src), false, `Forbidden API found in extension/${fname}`);
+}
+
+console.log("PASS: extension security & lifecycle verified (6/6 checks)");

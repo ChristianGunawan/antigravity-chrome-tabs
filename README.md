@@ -49,7 +49,9 @@ npx skills add ChristianGunawan/antigravity-chrome-tabs
 ## Verification
 
 ```bash
-node extension/verify.mjs
+npm test
+npx github:ChristianGunawan/antigravity-chrome-tabs status --json
+npx github:ChristianGunawan/antigravity-chrome-tabs doctor --json
 ```
 
 ## License
