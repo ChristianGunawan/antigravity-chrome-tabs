@@ -13,23 +13,25 @@ Pairs [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-
 
 ---
 
-## Quick Setup (3 Clicks & Done)
+## Quick Setup (1 Command + 2 Chrome Clicks)
 
-### 1. Install Skill & Load Extension
+### 1. Run the 1-Command Installer (No `git clone` needed)
 ```bash
-git clone https://github.com/ChristianGunawan/antigravity-chrome-tabs.git
-cd antigravity-chrome-tabs
-./install.sh
+npx github:ChristianGunawan/antigravity-chrome-tabs
 ```
-Or install just the agent skill via [`skills`](https://skills.sh):
+This checks Node `20.19+`, copies the extension to `~/.antigravity-chrome-tabs/extension`, installs the `/find-skills` skill, optionally updates `mcp_config.json` (with `.bak` backup after `y/N` prompt), and opens the extension folder.
+
+Or install only the skill via [`skills`](https://skills.sh):
 ```bash
 npx skills add ChristianGunawan/antigravity-chrome-tabs
 ```
 
 ### 2. Enable in Chrome (One-Time)
-1. Open `chrome://extensions` → enable **Developer mode** → **Load unpacked** → pick `antigravity-chrome-tabs/extension/`.
+1. Open `chrome://extensions` → enable **Developer mode** → **Load unpacked** → pick `~/.antigravity-chrome-tabs/extension`.
 2. Open `chrome://inspect/#remote-debugging` → check **Allow remote debugging for this browser instance**.
 3. Reload your AI client (`mcp_config.example.json` has the exact config). When the agent connects, click **Allow** once on Chrome's remote debugging prompt.
+
+*(Roadmap: Publishing to the Chrome Web Store will remove Developer Mode / Load Unpacked for a pure 1-click install.)*
 
 *(macOS tip: If `chrome-devtools-mcp --autoConnect` hits `EPERM` reading `DevToolsActivePort`, grant Full Disk Access to your AI client in System Settings, or run `chrome-devtools-mcp` without `--autoConnect` for an isolated profile.)*
 

@@ -1,0 +1,35 @@
+{
+  "name": "antigravity-chrome-tabs",
+  "version": "1.0.0",
+  "description": "Codex-style colored background Chrome tab groups for Antigravity, Claude Code, and MCP agents (privacy-first MV3 extension + skill).",
+  "type": "module",
+  "license": "MIT",
+  "bin": {
+    "antigravity-chrome-tabs": "./bin/cli.mjs"
+  },
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "files": [
+    "bin/",
+    "extension/",
+    "skills/",
+    "README.md",
+    "SECURITY.md",
+    "LICENSE",
+    "mcp_config.example.json",
+    "install.sh"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ChristianGunawan/antigravity-chrome-tabs.git"
+  },
+  "keywords": [
+    "antigravity",
+    "chrome-devtools-mcp",
+    "chrome-extension",
+    "tab-groups",
+    "mcp",
+    "ai-agents"
+  ]
+}

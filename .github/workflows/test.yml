@@ -14,3 +14,10 @@ jobs:
           node-version: "22"
       - name: Run extension security & lifecycle verification
         run: node extension/verify.mjs
+      - name: Verify CLI installer in isolated temp home
+        run: |
+          TMP_HOME="$(mktemp -d)"
+          AGY_HOME_OVERRIDE="$TMP_HOME" node bin/cli.mjs --yes --no-open
+          test -f "$TMP_HOME/.antigravity-chrome-tabs/extension/manifest.json"
+          test -f "$TMP_HOME/.agents/skills/antigravity-chrome-tabs/SKILL.md"
+          node -e "const c = JSON.parse(require('fs').readFileSync('$TMP_HOME/.gemini/antigravity/mcp_config.json','utf8')); if(!c.mcpServers['chrome-devtools']) process.exit(1)"
