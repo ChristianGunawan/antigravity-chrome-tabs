@@ -7,6 +7,8 @@ import {
   mkdirSync,
   readFileSync,
   realpathSync,
+  renameSync,
+  unlinkSync,
   writeFileSync
 } from "node:fs";
 import os from "node:os";
@@ -16,6 +18,7 @@ import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
 const SUBCOMMANDS = new Set(["install", "doctor", "status", "verify"]);
+const CHROME_DEVTOOLS_MCP_PKG = "chrome-devtools-mcp@1.13.0";
 const argv = process.argv.slice(2);
 const positionals = argv.filter(a => !a.startsWith("-"));
 const flags = new Set(argv.filter(a => a.startsWith("-")));
@@ -66,6 +69,9 @@ function outJson(payload, exitCode = 0) {
  * Symlink / path-traversal guard relative to resolved targetHome.
  */
 function assertSafePath(rootDir, targetPath) {
+  if (lstatSync(rootDir).isSymbolicLink()) {
+    throw new Error(`Refusing symlink root directory: ${rootDir}`);
+  }
   const rel = path.relative(rootDir, targetPath);
   if (!rel || rel.startsWith("..") || path.isAbsolute(rel)) {
     throw new Error(`Unsafe target path outside home root: ${targetPath}`);
@@ -83,6 +89,19 @@ function assertSafePath(rootDir, targetPath) {
         throw new Error(`Target escapes root directory: ${cur}`);
       }
     }
+  }
+}
+
+function writeFileAtomic(filePath, content, mode = 0o600) {
+  const tmpPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
+  assertSafePath(targetHome, tmpPath);
+  try {
+    writeFileSync(tmpPath, content, { encoding: "utf8", mode });
+    try { chmodSync(tmpPath, mode); } catch {}
+    renameSync(tmpPath, filePath);
+  } catch (err) {
+    try { unlinkSync(tmpPath); } catch {}
+    throw err;
   }
 }
 
@@ -261,8 +280,7 @@ if (!dryRun && updateMcp) {
     if (existsSync(mcpPath)) {
       const raw = readFileSync(mcpPath, "utf8");
       backupPath = `${mcpPath}.bak`;
-      writeFileSync(backupPath, raw, { encoding: "utf8", mode: 0o600 });
-      try { chmodSync(backupPath, 0o600); } catch {}
+      writeFileAtomic(backupPath, raw, 0o600);
       cfg = JSON.parse(raw);
     }
     const nodeBinDir = path.dirname(process.execPath);
@@ -271,11 +289,10 @@ if (!dryRun && updateMcp) {
     cfg.mcpServers = cfg.mcpServers || {};
     cfg.mcpServers["chrome-devtools"] = {
       command: npxPath,
-      args: ["-y", "chrome-devtools-mcp@latest", "--autoConnect", "--categoryExtensions"],
+      args: ["-y", CHROME_DEVTOOLS_MCP_PKG, "--autoConnect", "--categoryExtensions"],
       env: { PATH: `${nodeBinDir}${path.delimiter}${process.env.PATH || ""}` }
     };
-    writeFileSync(mcpPath, JSON.stringify(cfg, null, 2) + "\n", { encoding: "utf8", mode: 0o600 });
-    try { chmodSync(mcpPath, 0o600); } catch {}
+    writeFileAtomic(mcpPath, JSON.stringify(cfg, null, 2) + "\n", 0o600);
     mcpUpdated = true;
     log(`Updated MCP config  -> ${mcpPath}`);
   } catch (err) {

@@ -36,7 +36,7 @@ try {
   assert.ok(cfg.mcpServers.existing);
   assert.deepEqual(cfg.mcpServers["chrome-devtools"].args, [
     "-y",
-    "chrome-devtools-mcp@latest",
+    "chrome-devtools-mcp@1.13.0",
     "--autoConnect",
     "--categoryExtensions"
   ]);
@@ -76,7 +76,22 @@ try {
   assert.equal(failedClosed, true, "Expected install to reject symlink mcp_config.json");
   assert.equal(readFileSync(decoyFile, "utf8"), '{"untouched":true}');
 
-  console.log("PASS: CLI agent-native commands & security guards verified (3/3 suites)");
+  // 4. Symlink AGY_HOME_OVERRIDE root directory must also fail closed
+  const symRootParent = mkdtempSync(path.join(os.tmpdir(), "agy-symroot-"));
+  const symHome = path.join(symRootParent, "linked-home");
+  symlinkSync(decoyDir, symHome);
+  let symRootBlocked = false;
+  try {
+    runCli(["install", "--yes", "--no-open", "--json"], symHome);
+  } catch {
+    symRootBlocked = true;
+  } finally {
+    rmSync(symRootParent, { recursive: true, force: true });
+  }
+  assert.equal(symRootBlocked, true, "Expected install to reject symlink root directory");
+  assert.equal(existsSync(path.join(decoyDir, ".antigravity-chrome-tabs")), false);
+
+  console.log("PASS: CLI agent-native commands & security guards verified (4/4 suites)");
 } finally {
   rmSync(tmpHome, { recursive: true, force: true });
   rmSync(decoyDir, { recursive: true, force: true });

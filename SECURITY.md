@@ -6,8 +6,8 @@
 
 1. **Extension Permissions**: `manifest.json` requests only `tabs` and `tabGroups`. It requests zero `host_permissions`, zero `<all_urls>`, zero `cookies`, zero `history`, and zero network/telemetry APIs.
 2. **URL Scheme Allowlist**: `openInGroup` strictly validates URLs with `new URL()` and permits `http:` and `https:` schemes only (`chrome://`, `file://`, `javascript:`, `data:` are rejected).
-3. **Group Name Isolation**: Agent operations only create, modify, or close tab groups matching `/^agy(?:[-_a-z0-9]{0,29})?$/i`, preventing accidental modification or closure of the user's personal tab groups.
-4. **Remote Debugging Consent**: `chrome-devtools-mcp --autoConnect` relies on Chrome's built-in `chrome://inspect/#remote-debugging` confirmation dialog (`Allow` required by the user).
+3. **Group Name Isolation**: Agent operations only create, modify, or close tab groups matching `/^(?:antigravity|agy)(?:[-_a-z0-9]{0,24})?$/i`, and `groupTab` excludes active tabs and tabs already in another group — preventing accidental modification or closure of personal tab groups.
+4. **Remote Debugging Consent & Trust Boundary**: `chrome-devtools-mcp --autoConnect` connects an approved local MCP client to your active Chrome profile over CDP after you click **Allow** on Chrome's `chrome://inspect/#remote-debugging` prompt. For strict profile isolation, omit `--autoConnect` to run an isolated Chrome profile.
 
 ## Reporting a Vulnerability
 

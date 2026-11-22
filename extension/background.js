@@ -3,13 +3,13 @@
  * Security boundaries:
  * - Zero host permissions, zero external network requests, zero storage/history access.
  * - URL scheme allowlist: http:// and https:// only.
- * - Group name guard: agent actions only touch groups starting with "AGY".
+ * - Group name guard: agent actions only touch groups starting with "Antigravity" or "AGY".
  */
 (() => {
   const VALID_COLORS = new Set([
     "grey", "blue", "red", "yellow", "green", "pink", "purple", "cyan", "orange"
   ]);
-  const SAFE_GROUP_RE = /^agy(?:[-_a-z0-9]{0,29})?$/i;
+  const SAFE_GROUP_RE = /^(?:antigravity|agy)(?:[-_a-z0-9]{0,24})?$/i;
 
   function resolveColor(color) {
     const c = String(color || "purple").toLowerCase();
@@ -19,7 +19,7 @@
   function assertAllowedGroup(groupName) {
     const name = String(groupName || "").trim();
     if (!SAFE_GROUP_RE.test(name)) {
-      throw new Error(`Refusing non-agent group name "${groupName}": must start with "AGY"`);
+      throw new Error(`Refusing non-agent group name "${groupName}": must start with "Antigravity" or "AGY"`);
     }
     return name;
   }
@@ -57,7 +57,7 @@
     return { groupId, color: resolvedColor };
   }
 
-  async function openInGroup(url, groupName = "AGY", color = "purple") {
+  async function openInGroup(url, groupName = "Antigravity", color = "purple") {
     const safeUrl = assertAllowedUrl(url);
     const safeGroup = assertAllowedGroup(groupName);
     const tabs = await chrome.tabs.query({});
@@ -82,18 +82,26 @@
     };
   }
 
-  async function groupTab(urlContains, groupName = "AGY", color = "purple") {
-    if (!urlContains || typeof urlContains !== "string") {
-      throw new Error("groupTab requires a URL substring");
+  async function groupTab(urlContains, groupName = "Antigravity", color = "purple") {
+    const needle = typeof urlContains === "string" ? urlContains.trim() : "";
+    if (needle.length < 4) {
+      throw new Error("groupTab requires a URL host/path substring of at least 4 characters");
     }
     const safeGroup = assertAllowedGroup(groupName);
     const tabs = await chrome.tabs.query({});
     const matches = tabs.filter(t => {
+      if (t.active || (t.groupId !== undefined && t.groupId !== -1)) return false;
       const u = t.url || t.pendingUrl || "";
-      return (u.startsWith("http://") || u.startsWith("https://")) && u.includes(urlContains);
+      try {
+        const parsed = new URL(u);
+        if (parsed.protocol !== "http:" && parsed.protocol !== "https:") return false;
+        return (parsed.host + parsed.pathname + parsed.search).includes(needle);
+      } catch {
+        return false;
+      }
     });
     if (matches.length === 0) {
-      throw new Error(`No open http/https tab matching: ${urlContains}`);
+      throw new Error(`No ungrouped background http/https tab matching: ${needle}`);
     }
     const windowId = matches[0].windowId;
     const sameWinIds = matches.filter(t => t.windowId === windowId).map(t => t.id);
@@ -121,7 +129,7 @@
     return { closedTabs: tabIds.length, closedGroups: groups.length };
   }
 
-  async function closeGroup(groupName = "AGY") {
+  async function closeGroup(groupName = "Antigravity") {
     const safeGroup = assertAllowedGroup(groupName);
     const groups = await chrome.tabGroups.query({ title: safeGroup });
     return removeGroups(groups);

@@ -7,7 +7,7 @@ async function refresh() {
   groupsEl.textContent = "";
   const groups = res?.ok ? res.data : [];
   if (groups.length === 0) {
-    statusEl.textContent = "No active AGY agent tab groups.";
+    statusEl.textContent = "No active Antigravity tab groups.";
     statusEl.hidden = false;
     closeBtn.disabled = true;
     return;

@@ -5,13 +5,13 @@ description: Replicates Codex for Chrome's colored background tab-group isolatio
 
 # Antigravity Chrome Tab Groups (`antigravity-chrome-tabs`)
 
-Opens, automates, and cleans up background Chrome tabs inside labeled colored **`AGY-*`** tab groups so agents never switch or interrupt the user's active tab.
+Opens, automates, and cleans up background Chrome tabs inside labeled colored **`Antigravity`** tab groups so agents never switch or interrupt the user's active tab.
 
 ## Security & Privacy Guarantees
 
 - Extension requests **only** `tabs` and `tabGroups` permissions (no `<all_urls>`, no `cookies`, no `history`, no remote network requests).
 - Enforces an **`http:` / `https:` URL scheme allowlist** (blocks `chrome://`, `file://`, `javascript:`, `data:`).
-- Enforces an **`AGY*` group prefix guard** so agents cannot touch personal tab groups.
+- Enforces an **`Antigravity` (or legacy `AGY*`) group prefix guard** and excludes active/grouped tabs so agents cannot touch personal tab groups.
 
 ## Agent Self-Check CLI (`CLI-Anything` JSON Interface)
 
@@ -30,13 +30,13 @@ npx github:ChristianGunawan/antigravity-chrome-tabs verify --json
 2. **Open tab in a colored background group** (never activates tab):
    - Call `evaluate_script` with `serviceWorkerId`:
      ```js
-     () => agyTabs.openInGroup("https://example.com", "AGY-TASK", "purple")
+     () => agyTabs.openInGroup("https://example.com", "Antigravity", "purple")
      ```
 3. **Automate asynchronously by `pageId`**:
    - Call `list_pages` to get the background tab's `pageId`, then run `take_snapshot`, `fill`, `click`, `take_screenshot`, and `evaluate_script` strictly with that `pageId`. NEVER call `select_page`.
 4. **Close the group when done**:
    - Call `evaluate_script` with `serviceWorkerId`:
      ```js
-     () => agyTabs.closeGroup("AGY-TASK")
+     () => agyTabs.closeGroup("Antigravity")
      ```
    - Or panic-close all agent groups: `agyTabs.closeAllAgentGroups()`.

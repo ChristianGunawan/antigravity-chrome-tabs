@@ -67,41 +67,46 @@ vm.runInNewContext(readFileSync(new URL("background.js", dir), "utf8"), ctx);
 
 const { openInGroup, groupTab, closeGroup, closeAllAgentGroups, listGroups } = ctx.agyTabs;
 
-// 1. Background tab creation & group isolation
-const r1 = await openInGroup("https://flow.google.com/project/demo", "AGY-FLOW", "purple");
-assert.equal(r1.groupName, "AGY-FLOW");
+// 1. Background tab creation & default "Antigravity" group isolation
+const r1 = await openInGroup("https://example.com/a");
+assert.equal(r1.groupName, "Antigravity");
 assert.equal(r1.color, "purple");
 assert.equal(tabs.find(t => t.id === r1.tabId).active, false);
 assert.equal(tabs.find(t => t.id === 1).active, true);
 
 // 2. Reuse groupId within same group
-const r2 = await openInGroup("https://example.org", "AGY-FLOW", "purple");
+const r2 = await openInGroup("https://example.org", "Antigravity", "purple");
 assert.equal(r2.groupId, r1.groupId);
 
-// 3. groupTab works for existing background http/https tabs without activating
+// 3. groupTab hardens against broad/scheme substrings, active tabs, & personal groups
+await assert.rejects(() => groupTab("abc", "Antigravity"), /at least 4 characters/);
+await assert.rejects(() => groupTab("https://", "Antigravity"), /No ungrouped background http\/https tab/);
+tabs.push({ id: 204, windowId: 10, url: "https://example.com/user-group", active: false, groupId: 400 });
+await assert.rejects(() => groupTab("example.com", "Antigravity"), /No ungrouped background http\/https tab/);
+
 tabs.push({ id: 205, windowId: 10, url: "https://github.com/org/repo", active: false, groupId: -1 });
 const gTab = await groupTab("github.com/org", "AGY-GH", "invalid-color");
 assert.equal(gTab.color, "purple");
 
-// 4. Security guards: reject dangerous URL schemes and non-AGY group names
+// 4. Security guards: reject dangerous URL schemes and non-agent group names
 for (const badUrl of ["chrome://settings", "file:///etc/passwd", "javascript:alert(1)", "data:text/html,hi"]) {
-  await assert.rejects(() => openInGroup(badUrl, "AGY-TEST"), /Blocked URL scheme|Invalid URL/);
+  await assert.rejects(() => openInGroup(badUrl, "Antigravity"), /Blocked URL scheme|Invalid URL/);
 }
 await assert.rejects(() => openInGroup("https://example.com", "PERSONAL"), /Refusing non-agent group/);
 await assert.rejects(() => closeGroup("PERSONAL"), /Refusing non-agent group/);
 
 // 5. listGroups & closeGroup & closeAllAgentGroups preserve PERSONAL user group
 assert.equal((await listGroups(true)).length, 2);
-const closedFlow = await closeGroup("AGY-FLOW");
-assert.equal(closedFlow.closedTabs, 2);
-assert.equal(closedFlow.closedGroups, 1);
+const closedDefault = await closeGroup("Antigravity");
+assert.equal(closedDefault.closedTabs, 2);
+assert.equal(closedDefault.closedGroups, 1);
 
 const closedAll = await closeAllAgentGroups();
 assert.equal(closedAll.closedTabs, 1);
 assert.equal(closedAll.closedGroups, 1);
 assert.equal(groups.length, 1);
 assert.equal(groups[0].title, "PERSONAL");
-assert.equal(tabs.length, 1);
+assert.equal(tabs.length, 2);
 
 // 6. Static security scan across runtime extension files
 const dangerRe = /\b(?:eval|new Function|innerHTML|fetch|XMLHttpRequest|WebSocket|chrome\.cookies|chrome\.history)\b/;

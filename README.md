@@ -1,14 +1,14 @@
 # Antigravity Chrome Tabs (`antigravity-chrome-tabs`)
 
-Give your AI agent **Codex-style colored background Chrome tab groups** (`AGY-*`) without touching your active tab, cursor, or focus.
+Give your AI agent **Codex-style colored background Chrome tab groups** (`Antigravity`) without touching your active tab, cursor, or focus.
 
 Pairs [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-mcp) (`--autoConnect --categoryExtensions`) with a **privacy-first MV3 Chrome extension**.
 
 ---
 
 ## Why Use This?
-- **Never steals focus**: Opens & automates tasks in background purple **`AGY-*`** tab groups while you browse or watch videos undisturbed.
-- **Auto-cleanup + panic button**: Agent calls `agyTabs.closeGroup("AGY-TASK")` when done, or click the toolbar icon → **Close All Agent Groups** anytime.
+- **Never steals focus**: Opens & automates tasks in background purple **`Antigravity`** tab groups while you browse or watch videos undisturbed.
+- **Auto-cleanup + panic button**: Agent calls `agyTabs.closeGroup("Antigravity")` when done, or click the toolbar icon → **Close All Agent Groups** anytime.
 - **Strict least-privilege permissions**: Only `tabs` and `tabGroups` — **no** `<all_urls>`, **no** `cookies`, **no** `history`, **no** external network calls.
 
 ---
@@ -43,7 +43,8 @@ npx skills add ChristianGunawan/antigravity-chrome-tabs
 | :--- | :--- |
 | **Minimal permissions** | `manifest.json` declares `["tabs", "tabGroups"]` only — zero `host_permissions` or `<all_urls>`. |
 | **Scheme allowlist** | `openInGroup` only allows `http:` and `https:`; blocks `chrome://`, `file://`, `javascript:`, `data:`. |
-| **User-group isolation** | `openInGroup`, `groupTab`, and `closeGroup` refuse any group name not starting with `AGY`. |
+| **User-group isolation** | `openInGroup`, `groupTab`, and `closeGroup` only touch groups starting with `Antigravity` (or legacy `AGY`), and `groupTab` excludes active/already-grouped tabs. |
+| **Hardened setup & supply chain** | Pins `chrome-devtools-mcp@1.13.0`, checks paths for symlinks, and writes `mcp_config.json` atomically with `0600` permissions. |
 | **Zero telemetry** | Zero network fetches, zero analytics, zero persistent history storage. |
 
 ## Verification
