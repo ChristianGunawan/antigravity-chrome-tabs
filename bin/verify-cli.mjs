@@ -29,6 +29,7 @@ try {
   assert.equal(inst.ok, true);
   assert.equal(inst.mcpUpdated, true);
   assert.ok(existsSync(path.join(tmpHome, ".antigravity-chrome-tabs", "extension", "manifest.json")));
+  assert.ok(existsSync(path.join(tmpHome, ".antigravity-chrome-tabs", "extension", "icons", "icon128.png")));
   assert.ok(existsSync(path.join(tmpHome, ".agents", "skills", "antigravity-chrome-tabs", "SKILL.md")));
   assert.ok(existsSync(`${mcpFile}.bak`));
 
@@ -91,7 +92,34 @@ try {
   assert.equal(symRootBlocked, true, "Expected install to reject symlink root directory");
   assert.equal(existsSync(path.join(decoyDir, ".antigravity-chrome-tabs")), false);
 
-  console.log("PASS: CLI agent-native commands & security guards verified (4/4 suites)");
+  // 5. uninstall --yes --json cleans extension/skill & chrome-devtools while keeping existing MCP servers
+  const uninstHome = mkdtempSync(path.join(os.tmpdir(), "agy-uninst-test-"));
+  try {
+    const umcpDir = path.join(uninstHome, ".gemini", "antigravity");
+    const umcpFile = path.join(umcpDir, "mcp_config.json");
+    mkdirSync(umcpDir, { recursive: true });
+    writeFileSync(umcpFile, JSON.stringify({ mcpServers: { existing: { command: "echo" } } }), "utf8");
+    runCli(["install", "--yes", "--no-open", "--json"], uninstHome);
+
+    const un = runCli(["uninstall", "--yes", "--json"], uninstHome);
+    assert.equal(un.ok, true);
+    assert.equal(un.removed.extension, true);
+    assert.equal(un.removed.skill, true);
+    assert.equal(un.removed.mcpEntry, true);
+    assert.equal(existsSync(path.join(uninstHome, ".antigravity-chrome-tabs")), false);
+    assert.equal(existsSync(path.join(uninstHome, ".agents", "skills", "antigravity-chrome-tabs")), false);
+
+    const ucfg = JSON.parse(readFileSync(umcpFile, "utf8"));
+    assert.equal(ucfg.mcpServers["chrome-devtools"], undefined);
+    assert.ok(ucfg.mcpServers.existing);
+    if (process.platform !== "win32") {
+      assert.equal(statSync(umcpFile).mode & 0o777, 0o600);
+    }
+  } finally {
+    rmSync(uninstHome, { recursive: true, force: true });
+  }
+
+  console.log("PASS: CLI agent-native commands & security guards verified (5/5 suites)");
 } finally {
   rmSync(tmpHome, { recursive: true, force: true });
   rmSync(decoyDir, { recursive: true, force: true });

@@ -8,6 +8,7 @@ import {
   readFileSync,
   realpathSync,
   renameSync,
+  rmSync,
   unlinkSync,
   writeFileSync
 } from "node:fs";
@@ -17,7 +18,7 @@ import readline from "node:readline/promises";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 
-const SUBCOMMANDS = new Set(["install", "doctor", "status", "verify"]);
+const SUBCOMMANDS = new Set(["install", "uninstall", "doctor", "status", "verify"]);
 const CHROME_DEVTOOLS_MCP_PKG = "chrome-devtools-mcp@1.13.0";
 const argv = process.argv.slice(2);
 const positionals = argv.filter(a => !a.startsWith("-"));
@@ -30,6 +31,7 @@ if (flags.has("--help") || flags.has("-h") || !SUBCOMMANDS.has(command)) {
 
 Commands:
   install       Install extension, skill, and optionally configure MCP (default)
+  uninstall     Remove installed extension, skill, and optional MCP entry
   doctor        Diagnose Node, extension, skill, MCP config, and Chrome debugging
   status        Report installation state and paths
   verify        Run extension security & lifecycle self-checks
@@ -54,7 +56,15 @@ const targetHome = process.env.AGY_HOME_OVERRIDE || os.homedir();
 const extDest = path.join(targetHome, ".antigravity-chrome-tabs", "extension");
 const skillDest = path.join(targetHome, ".agents", "skills", "antigravity-chrome-tabs", "SKILL.md");
 const mcpPath = path.join(targetHome, ".gemini", "antigravity", "mcp_config.json");
-const extFiles = ["manifest.json", "background.js", "popup.html", "popup.js"];
+const extFiles = [
+  "manifest.json",
+  "background.js",
+  "popup.html",
+  "popup.js",
+  "icons/icon16.png",
+  "icons/icon48.png",
+  "icons/icon128.png"
+];
 
 function log(msg) {
   if (!jsonMode) console.log(msg);
@@ -225,6 +235,74 @@ if (command === "doctor") {
   process.exit(ok ? 0 : 1);
 }
 
+if (command === "uninstall") {
+  const extRoot = path.join(targetHome, ".antigravity-chrome-tabs");
+  const skillDir = path.join(targetHome, ".agents", "skills", "antigravity-chrome-tabs");
+  try {
+    assertSafePath(targetHome, extRoot);
+    assertSafePath(targetHome, skillDir);
+  } catch (err) {
+    if (jsonMode) outJson({ ok: false, error: err.message }, 1);
+    console.error(`Security error: ${err.message}`);
+    process.exit(1);
+  }
+
+  const extPresent = existsSync(extRoot);
+  const skillPresent = existsSync(skillDir);
+  if (!dryRun) {
+    if (extPresent) rmSync(extRoot, { recursive: true, force: true });
+    if (skillPresent) rmSync(skillDir, { recursive: true, force: true });
+  }
+
+  let removeMcp = false;
+  if (existsSync(mcpPath)) {
+    removeMcp = autoYes;
+    if (!autoYes && !dryRun && !jsonMode && process.stdin.isTTY) {
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const ans = await rl.question(`\nRemove chrome-devtools entry from ${mcpPath}? [y/N] `);
+      rl.close();
+      removeMcp = /^[Yy]$/.test(ans.trim());
+    }
+  }
+
+  let mcpRemoved = false;
+  let uninstallBackupPath = null;
+  if (!dryRun && removeMcp && existsSync(mcpPath)) {
+    try {
+      assertSafePath(targetHome, mcpPath);
+      assertSafePath(targetHome, `${mcpPath}.bak`);
+      const raw = readFileSync(mcpPath, "utf8");
+      const cfg = JSON.parse(raw);
+      if (cfg?.mcpServers && Object.prototype.hasOwnProperty.call(cfg.mcpServers, "chrome-devtools")) {
+        uninstallBackupPath = `${mcpPath}.bak`;
+        writeFileAtomic(uninstallBackupPath, raw, 0o600);
+        delete cfg.mcpServers["chrome-devtools"];
+        writeFileAtomic(mcpPath, JSON.stringify(cfg, null, 2) + "\n", 0o600);
+        mcpRemoved = true;
+      }
+    } catch (err) {
+      if (jsonMode) outJson({ ok: false, error: err.message }, 1);
+      console.error(`Error updating MCP config: ${err.message}`);
+      process.exit(1);
+    }
+  }
+
+  if (jsonMode) {
+    outJson({
+      ok: true,
+      dryRun,
+      removed: { extension: extPresent, skill: skillPresent, mcpEntry: mcpRemoved },
+      backupPath: uninstallBackupPath
+    });
+  }
+  log("=== Antigravity Chrome Tabs Uninstall ===");
+  log(`Extension dir : ${extPresent ? (dryRun ? "would remove" : "removed") : "not found"} (${extRoot})`);
+  log(`Skill dir     : ${skillPresent ? (dryRun ? "would remove" : "removed") : "not found"} (${skillDir})`);
+  log(`MCP entry     : ${mcpRemoved ? "removed" : "unchanged"} (${mcpPath})`);
+  log("\nNote: Also click Remove on Antigravity Tab Groups in chrome://extensions.");
+  process.exit(0);
+}
+
 // command === "install"
 const nodeCheck = checkNodeVersion();
 if (!nodeCheck.ok) {
@@ -252,7 +330,9 @@ try {
 if (!dryRun) {
   mkdirSync(extDest, { recursive: true });
   for (const file of extFiles) {
-    copyFileSync(path.join(repoRoot, "extension", file), path.join(extDest, file));
+    const destFile = path.join(extDest, file);
+    mkdirSync(path.dirname(destFile), { recursive: true });
+    copyFileSync(path.join(repoRoot, "extension", file), destFile);
   }
   log(`Installed extension -> ${extDest}`);
 

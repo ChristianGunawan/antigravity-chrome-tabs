@@ -8,7 +8,8 @@
     "antigravity-chrome-tabs": "./bin/cli.mjs"
   },
   "scripts": {
-    "test": "node extension/verify.mjs && node bin/verify-cli.mjs"
+    "test": "node extension/verify.mjs && node bin/verify-cli.mjs",
+    "pack": "rm -f antigravity-chrome-tabs-extension.zip && (cd extension && zip -r ../antigravity-chrome-tabs-extension.zip manifest.json background.js popup.html popup.js icons/)"
   },
   "engines": {
     "node": ">=20.19.0"
@@ -18,6 +19,7 @@
     "extension/",
     "skills/",
     "README.md",
+    "PRIVACY.md",
     "SECURITY.md",
     "LICENSE",
     "mcp_config.example.json",

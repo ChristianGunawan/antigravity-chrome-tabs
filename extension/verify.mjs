@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const dir = new URL(".", import.meta.url);
@@ -10,13 +10,38 @@ assert.ok(manifest.permissions.includes("tabs"));
 assert.ok(manifest.permissions.includes("tabGroups"));
 assert.equal(manifest.host_permissions, undefined);
 assert.equal(manifest.background.service_worker, "background.js");
+for (const sz of ["16", "48", "128"]) {
+  assert.ok(manifest.icons?.[sz] && existsSync(new URL(manifest.icons[sz], dir)), `Missing icon ${sz}`);
+}
 
 let nextTabId = 100;
 let nextGroupId = 500;
-const tabs = [{ id: 1, windowId: 10, url: "https://example.com", active: true, groupId: 400 }];
+let nextWindowId = 200;
+const windows = [
+  { id: 99, type: "popup", focused: true },
+  { id: 10, type: "normal", focused: false }
+];
+const tabs = [
+  { id: 2, windowId: 99, url: "https://popup.example.com", active: true, groupId: -1 },
+  { id: 1, windowId: 10, url: "https://example.com", active: true, groupId: 400 }
+];
 const groups = [{ id: 400, windowId: 10, title: "PERSONAL", color: "blue", collapsed: false }];
 
 const mockChrome = {
+  windows: {
+    async getLastFocused({ windowTypes } = {}) {
+      const pool = windowTypes ? windows.filter(w => windowTypes.includes(w.type)) : windows;
+      return pool.find(w => w.focused) || pool[0] || null;
+    },
+    async getAll({ windowTypes } = {}) {
+      return windowTypes ? windows.filter(w => windowTypes.includes(w.type)) : windows;
+    },
+    async create({ type = "normal", focused = true } = {}) {
+      const w = { id: ++nextWindowId, type, focused };
+      windows.push(w);
+      return w;
+    }
+  },
   tabs: {
     async query(q = {}) {
       return tabs.filter(t => q.groupId === undefined || t.groupId === q.groupId);
@@ -69,6 +94,7 @@ const { openInGroup, groupTab, closeGroup, closeAllAgentGroups, listGroups } = c
 
 // 1. Background tab creation & default "Antigravity" group isolation
 const r1 = await openInGroup("https://example.com/a");
+assert.equal(r1.windowId, 10);
 assert.equal(r1.groupName, "Antigravity");
 assert.equal(r1.color, "purple");
 assert.equal(tabs.find(t => t.id === r1.tabId).active, false);
@@ -106,7 +132,7 @@ assert.equal(closedAll.closedTabs, 1);
 assert.equal(closedAll.closedGroups, 1);
 assert.equal(groups.length, 1);
 assert.equal(groups[0].title, "PERSONAL");
-assert.equal(tabs.length, 2);
+assert.equal(tabs.length, 3);
 
 // 6. Static security scan across runtime extension files
 const dangerRe = /\b(?:eval|new Function|innerHTML|fetch|XMLHttpRequest|WebSocket|chrome\.cookies|chrome\.history)\b/;

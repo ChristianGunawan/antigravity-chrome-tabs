@@ -13,12 +13,14 @@ Pairs [`chrome-devtools-mcp`](https://github.com/ChromeDevTools/chrome-devtools-
 
 ---
 
-## Quick Setup (1 Command + 2 Chrome Clicks)
+## Quick Setup (macOS + Antigravity · 1 Command + 2 Chrome Clicks)
 
 ### 1. Run the 1-Command Installer (No `git clone` needed)
 ```bash
 npx github:ChristianGunawan/antigravity-chrome-tabs
 ```
+Or download the unpacked extension zip from [GitHub Releases](https://github.com/ChristianGunawan/antigravity-chrome-tabs/releases/latest) (built via `npm run pack`).
+
 This checks Node `20.19+`, copies the extension to `~/.antigravity-chrome-tabs/extension`, installs the `/find-skills` skill, optionally updates `mcp_config.json` (with `.bak` backup after `y/N` prompt), and opens the extension folder.
 
 Or install only the skill via [`skills`](https://skills.sh):
@@ -47,14 +49,15 @@ npx skills add ChristianGunawan/antigravity-chrome-tabs
 | **Hardened setup & supply chain** | Pins `chrome-devtools-mcp@1.13.0`, checks paths for symlinks, and writes `mcp_config.json` atomically with `0600` permissions. |
 | **Zero telemetry** | Zero network fetches, zero analytics, zero persistent history storage. |
 
-## Verification
+## Verification & Uninstall
 
 ```bash
 npm test
 npx github:ChristianGunawan/antigravity-chrome-tabs status --json
 npx github:ChristianGunawan/antigravity-chrome-tabs doctor --json
+npx github:ChristianGunawan/antigravity-chrome-tabs uninstall
 ```
 
-## License
+## License & Privacy
 
-[MIT](LICENSE)
+[MIT](LICENSE) · [Privacy Policy](PRIVACY.md)

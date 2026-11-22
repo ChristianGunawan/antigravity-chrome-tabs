@@ -57,13 +57,35 @@
     return { groupId, color: resolvedColor };
   }
 
+  async function findNormalWindowId() {
+    if (chrome.windows?.getLastFocused) {
+      try {
+        const last = await chrome.windows.getLastFocused({ windowTypes: ["normal"] });
+        if (last?.id != null && (!last.type || last.type === "normal")) {
+          return last.id;
+        }
+      } catch {}
+    }
+    if (chrome.windows?.getAll) {
+      const wins = await chrome.windows.getAll({ windowTypes: ["normal"] });
+      const normalWin = wins.find(w => w?.id != null && (!w.type || w.type === "normal"));
+      if (normalWin) return normalWin.id;
+      if (chrome.windows.create) {
+        const created = await chrome.windows.create({ focused: false, type: "normal" });
+        if (created?.id != null) return created.id;
+      }
+    }
+    const tabs = await chrome.tabs.query({});
+    return tabs[0]?.windowId;
+  }
+
   async function openInGroup(url, groupName = "Antigravity", color = "purple") {
     const safeUrl = assertAllowedUrl(url);
     const safeGroup = assertAllowedGroup(groupName);
-    const tabs = await chrome.tabs.query({});
     const createOpts = { url: safeUrl, active: false };
-    if (tabs.length > 0 && tabs[0].windowId != null) {
-      createOpts.windowId = tabs[0].windowId;
+    const windowId = await findNormalWindowId();
+    if (windowId != null) {
+      createOpts.windowId = windowId;
     }
     const tab = await chrome.tabs.create(createOpts);
     const { groupId, color: resolvedColor } = await assignToGroup(
